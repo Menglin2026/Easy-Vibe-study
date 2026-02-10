@@ -1,3 +1,786 @@
-通过输入简单的需求描述，AI就能快速的实现自动编程，感觉很神奇。不知道工程领域是否也能快速实现，比如人工智能模型的实现，遥感里的分类，目标识别等等，期待中。
-根据教程用Z.ai实现了一个输入文字，写出浪漫爱情诗的贪吃蛇小程序。感觉挺好的，雪下的时候，思念那么汹涌。
-希望能学会开发微信小程序，能够满足分配人员，规划路线，安排检查的工作。多和组员学习。
+#通过输入简单的需求描述，AI就能快速的实现自动编程，感觉很神奇。不知道工程领域是否也能快速实现，比如人工智能模型的实现，遥感里的分类，目标识别等等，期待中。
+#根据教程用Z.ai实现了一个输入文字，写出浪漫爱情诗的贪吃蛇小程序。感觉挺好的，雪下的时候，思念那么汹涌。
+#希望能学会开发微信小程序，能够满足分配人员，规划路线，安排检查的工作。多和组员学习。
+当然可以！这个改动会让游戏更具私人定制感和仪式感。
+
+现在，游戏开始前会有一个优雅的输入框，等待你输入 **8个汉字**（比如爱人的名字、一句誓言或者吉祥话）。输入后，这8个字会变成贪吃蛇的食物，你需要按照自己的意愿去“吃掉”它们，最终生成的诗歌和画作将完全由你输入的这8个字决定。
+
+以下是更新后的完整代码：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唯美贪吃蛇 - 定制情缘</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1a0b2e 0%, #4a192c 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-color: #ffdeeb;
+            --accent-color: #ff6b81;
+            --secondary-accent: #ff9eb5;
+            --snake-head: #fff;
+            --snake-body: rgba(255, 107, 129, 0.6);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            font-family: 'Cinzel', 'Georgia', 'SimSun', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        header {
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--secondary-accent);
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(255, 107, 129, 0.5);
+            font-weight: normal;
+        }
+
+        /* 游戏主区域 */
+        #main-stage {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            gap: 30px;
+            height: calc(100vh - 70px);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 画布容器 */
+        #canvas-container {
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 107, 129, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            width: 600px;
+            height: 600px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* 侧边栏 */
+        #sidebar {
+            width: 260px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            padding: 20px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        #sidebar h2 {
+            font-size: 1.3rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+            color: var(--secondary-accent);
+            text-align: center;
+            font-weight: normal;
+        }
+
+        #word-box {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .collected-word {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 222, 235, 0.3);
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        #progress-text {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+
+        /* 开始屏幕与输入框 */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 11, 46, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        #user-words {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--secondary-accent);
+            color: #fff;
+            font-size: 2rem;
+            text-align: center;
+            font-family: inherit;
+            width: 300px;
+            padding: 10px;
+            outline: none;
+            letter-spacing: 10px;
+            border-radius: 0;
+            transition: all 0.3s;
+        }
+
+        #user-words:focus {
+            border-bottom-color: #fff;
+            text-shadow: 0 0 10px var(--secondary-accent);
+        }
+
+        #user-words::placeholder {
+            color: rgba(255,255,255,0.3);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        #error-msg {
+            color: #ff6b81;
+            height: 20px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 11, 46, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: rgba(40, 20, 50, 0.95);
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 650px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 107, 129, 0.15);
+            position: relative;
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-content h2 {
+            font-size: 2rem;
+            color: var(--secondary-accent);
+            margin-top: 0;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        #poem-display {
+            font-size: 1.3rem;
+            line-height: 2;
+            margin: 30px 0;
+            font-family: 'KaiTi', 'STKaiti', serif;
+            color: #fff;
+            min-height: 150px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+
+        #art-canvas {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin: 20px 0;
+            display: none;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff6b81, #ff9eb5);
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 107, 129, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 107, 129, 0.6);
+            filter: brightness(1.1);
+        }
+
+        button.secondary {
+            background: transparent;
+            border: 1px solid var(--secondary-accent);
+            color: var(--secondary-accent);
+            box-shadow: none;
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 158, 181, 0.1);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            #main-stage {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            #sidebar {
+                width: 100%;
+                height: 100px;
+                flex-direction: row;
+                gap: 15px;
+                align-items: center;
+            }
+            #word-box {
+                display: flex;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
+            #sidebar h2, #progress-text {
+                display: none;
+            }
+            #canvas-container, canvas {
+                width: 100%;
+                height: auto;
+            }
+            #user-words {
+                width: 80%;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>诗意情缘 · 贪吃蛇</h1>
+</header>
+
+<div id="main-stage">
+    <div id="canvas-container">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        
+        <!-- 开始/输入 屏幕 -->
+        <div id="start-screen">
+            <h2 style="font-size: 2rem; color: var(--secondary-accent); margin-bottom: 10px;">定制的爱</h2>
+            <div class="input-group">
+                <input type="text" id="user-words" maxlength="8" placeholder="输入8个字" autocomplete="off">
+                <div id="error-msg">请输入正好8个汉字</div>
+            </div>
+            <button onclick="validateAndStart()">开启旅程</button>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <h2>收集的信笺</h2>
+        <div id="word-box">
+            <!-- 收集的词会在这里 -->
+            <div style="grid-column: span 2; color: rgba(255,255,255,0.3); text-align: center; padding-top: 20px;" id="empty-msg">等待拾取...</div>
+        </div>
+        <div id="progress-text">已收集: <span id="score">0</span> / 8</div>
+    </div>
+</div>
+
+<div id="poem-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>✨ 爱的独白 ✨</h2>
+        <p style="color: #aaa; font-size: 0.9rem;">源于词汇：<span id="collected-words-summary" style="color: var(--secondary-accent)"></span></p>
+        <div id="poem-display">正在编织梦境...</div>
+        
+        <canvas id="art-canvas" width="600" height="350"></canvas>
+
+        <div class="btn-group" id="poem-actions">
+            <button class="secondary" onclick="remixPoem()">🔄 重温旧梦</button>
+            <button onclick="generateImage()">🎨 凝结成画</button>
+        </div>
+        
+        <div class="btn-group" id="final-actions" style="display: none;">
+            <button class="secondary" onclick="closeModalAndReset()">🔄 再次邂逅</button>
+            <button onclick="downloadArt()">💾 珍藏画作</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gridSize = 30;
+    const tileCount = canvas.width / gridSize;
+    
+    // 游戏状态
+    let snake = [];
+    let velocity = { x: 0, y: 0 };
+    let food = { x: 10, y: 10, word: "?" };
+    let collectedWords = [];
+    let wordsToSpawn = []; // 待生成的词库
+    let gameInterval;
+    let isGameRunning = false;
+    const TARGET_COUNT = 8;
+
+    // 输入验证与开始
+    function validateAndStart() {
+        const input = document.getElementById('user-words');
+        const errorMsg = document.getElementById('error-msg');
+        const val = input.value.trim();
+
+        // 简单的验证：需要8个字符，且最好是汉字（这里只做长度验证，宽松处理）
+        if (val.length !== 8) {
+            errorMsg.style.opacity = 1;
+            setTimeout(() => errorMsg.style.opacity = 0, 2000);
+            return;
+        }
+
+        // 初始化词库
+        wordsToSpawn = val.split('');
+        collectedWords = [];
+        
+        // UI 切换
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('user-words').blur(); // 移除焦点，防止键盘控制冲突
+        
+        startGame();
+    }
+
+    // 监听回车键
+    document.getElementById('user-words').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            validateAndStart();
+        }
+    });
+
+    function initGame() {
+        snake = [
+            { x: 10, y: 10 },
+            { x: 9, y: 10 },
+            { x: 8, y: 10 }
+        ];
+        velocity = { x: 1, y: 0 };
+        updateWordBoxUI();
+        spawnFood();
+    }
+
+    function startGame() {
+        initGame();
+        isGameRunning = true;
+        if (gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, 120);
+    }
+
+    function gameLoop() {
+        if (!isGameRunning) return;
+
+        const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+
+        // 穿墙逻辑
+        if (head.x < 0) head.x = tileCount - 1;
+        if (head.x >= tileCount) head.x = 0;
+        if (head.y < 0) head.y = tileCount - 1;
+        if (head.y >= tileCount) head.y = 0;
+
+        snake.unshift(head);
+
+        // 吃到词语
+        if (head.x === food.x && head.y === food.y) {
+            collectWord(food.word);
+            if (collectedWords.length < TARGET_COUNT) {
+                spawnFood();
+            } else {
+                isGameRunning = false;
+                clearInterval(gameInterval);
+                setTimeout(showPoemModal, 600);
+            }
+        } else {
+            snake.pop();
+        }
+
+        draw();
+    }
+
+    function spawnFood() {
+        let validPosition = false;
+        while (!validPosition) {
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+            validPosition = true;
+            for (let part of snake) {
+                if (part.x === food.x && part.y === food.y) {
+                    validPosition = false;
+                    break;
+                }
+            }
+        }
+
+        // 从待生成列表中随机取一个词
+        // 策略：随机选取，保证游戏趣味性，而不是固定顺序
+        if (wordsToSpawn.length > 0) {
+            const randomIndex = Math.floor(Math.random() * wordsToSpawn.length);
+            food.word = wordsToSpawn[randomIndex];
+        }
+    }
+
+    function collectWord(word) {
+        collectedWords.push(word);
+        // 从待生成列表中移除该词（防止重复生成，确保8个词吃满）
+        const index = wordsToSpawn.indexOf(word);
+        if (index > -1) {
+            wordsToSpawn.splice(index, 1);
+        }
+        updateWordBoxUI();
+    }
+
+    function updateWordBoxUI() {
+        const box = document.getElementById('word-box');
+        const emptyMsg = document.getElementById('empty-msg');
+        const scoreSpan = document.getElementById('score');
+        
+        if (collectedWords.length > 0 && emptyMsg) {
+            emptyMsg.style.display = 'none';
+        }
+
+        box.innerHTML = ''; 
+        if (collectedWords.length === 0) {
+            box.appendChild(emptyMsg);
+            emptyMsg.style.display = 'block';
+        } else {
+            collectedWords.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'collected-word';
+                div.innerText = w;
+                box.appendChild(div);
+            });
+            box.scrollTop = box.scrollHeight;
+        }
+        scoreSpan.innerText = collectedWords.length;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 绘制网格
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < tileCount; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * gridSize, 0);
+            ctx.lineTo(i * gridSize, canvas.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i * gridSize);
+            ctx.lineTo(canvas.width, i * gridSize);
+            ctx.stroke();
+        }
+
+        // 绘制食物
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff6b81';
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 18px "KaiTi", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(food.word, food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2);
+        ctx.shadowBlur = 0;
+
+        // 绘制蛇
+        snake.forEach((part, index) => {
+            if (index === 0) {
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#fff';
+            } else {
+                const alpha = 1 - (index / snake.length);
+                ctx.fillStyle = `rgba(255, 107, 129, ${Math.max(0.3, alpha)})`;
+                ctx.shadowBlur = 0;
+            }
+            
+            const x = part.x * gridSize + 2;
+            const y = part.y * gridSize + 2;
+            const size = gridSize - 4;
+            const radius = 6;
+            
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + size - radius, y);
+            ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
+            ctx.lineTo(x + size, y + size - radius);
+            ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+            ctx.lineTo(x + radius, y + size);
+            ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        });
+    }
+
+    // 键盘控制
+    document.addEventListener('keydown', (e) => {
+        // 如果输入框正在显示，不拦截方向键
+        if (document.getElementById('start-screen').style.display !== 'none') return;
+
+        switch(e.key) {
+            case 'ArrowUp': case 'w': case 'W':
+                if (velocity.y !== 1) velocity = { x: 0, y: -1 }; break;
+            case 'ArrowDown': case 's': case 'S':
+                if (velocity.y !== -1) velocity = { x: 0, y: 1 }; break;
+            case 'ArrowLeft': case 'a': case 'A':
+                if (velocity.x !== 1) velocity = { x: -1, y: 0 }; break;
+            case 'ArrowRight': case 'd': case 'D':
+                if (velocity.x !== -1) velocity = { x: 1, y: 0 }; break;
+        }
+    });
+
+    /**
+     * 诗歌生成逻辑
+     */
+    let currentPoem = "";
+    
+    function showPoemModal() {
+        const modal = document.getElementById('poem-modal');
+        const summary = document.getElementById('collected-words-summary');
+        const poemActions = document.getElementById('poem-actions');
+        const finalActions = document.getElementById('final-actions');
+        const artCanvas = document.getElementById('art-canvas');
+        
+        summary.innerText = collectedWords.join(" · ");
+        modal.classList.add('active');
+        
+        poemActions.style.display = 'flex';
+        finalActions.style.display = 'none';
+        artCanvas.style.display = 'none';
+        document.getElementById('poem-display').style.display = 'block';
+
+        remixPoem();
+    }
+
+    function remixPoem() {
+        const display = document.getElementById('poem-display');
+        display.innerText = "正在聆听心声...";
+        
+        setTimeout(() => {
+            currentPoem = generatePoemText(collectedWords);
+            typeWriterEffect(currentPoem, display);
+        }, 800);
+    }
+
+    function generatePoemText(words) {
+        const templates = [
+            (ws) => {
+                const [w1, w2, w3, w4, w5, w6, w7, w8] = ws;
+                return `    《${w1}${w2}》\n\n${w1}意阑珊，${w2}语轻。\n${w3}深不知处，${w4}动${w5}情。\n\n以此${w6}为誓，\n伴君${w7}${w8}行。`;
+            },
+            (ws) => {
+                const shuffled = [...ws].sort(() => Math.random() - 0.5);
+                return `    《关于${shuffled[0]}》\n\n我把${shuffled[1]}写进${shuffled[2]}里，\n风起时，便成了${shuffled[3]}。\n\n你说，${shuffled[4]}是瞬间的花火，\n而${shuffled[5]}是永恒的守候。\n\n在${shuffled[6]}的尽头，\n我终于懂了${shuffled[7]}的含义。`;
+            },
+            (ws) => {
+                return `    《${ws[0]}词》\n\n${ws[0]}落${ws[1]}满庭芳，\n${ws[2]}影斑驳照${ws[3]}窗。\n\n欲寄相思${ws[4]}万缕，\n唯以此${ws[5]}换${ws[6]}长。\n\n从此${ws[7]}在心间，\n不问归期，不诉离殇。`;
+            }
+        ];
+
+        const template = templates[Math.floor(Math.random() * templates.length)];
+        return template(words);
+    }
+
+    function typeWriterEffect(text, element) {
+        element.innerText = "";
+        let i = 0;
+        const speed = 50;
+        function type() {
+            if (i < text.length) {
+                element.innerText += text.charAt(i);
+                i++;
+                setTimeout(type, speed);
+            }
+        }
+        type();
+    }
+
+    /**
+     * 唯美抽象画生成
+     */
+    function generateImage() {
+        const poemActions = document.getElementById('poem-actions');
+        const finalActions = document.getElementById('final-actions');
+        const artCanvas = document.getElementById('art-canvas');
+        const poemDisplay = document.getElementById('poem-display');
+        
+        poemActions.style.display = 'none';
+        poemDisplay.style.display = 'none';
+        artCanvas.style.display = 'block';
+        finalActions.style.display = 'flex';
+
+        const aCtx = artCanvas.getContext('2d');
+        const width = artCanvas.width;
+        const height = artCanvas.height;
+
+        // 基于用户输入的词生成种子
+        let seed = 0;
+        for (let i = 0; i < currentPoem.length; i++) seed += currentPoem.charCodeAt(i);
+        const random = () => { const x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
+
+        // 1. 背景
+        const bgGrad = aCtx.createLinearGradient(0, 0, width, height);
+        bgGrad.addColorStop(0, `hsl(${260 + random()*40}, 60%, 15%)`);
+        bgGrad.addColorStop(1, `hsl(${320 + random()*40}, 60%, 20%)`);
+        aCtx.fillStyle = bgGrad;
+        aCtx.fillRect(0, 0, width, height);
+
+        // 2. 流光
+        for(let i=0; i<15; i++) {
+            aCtx.beginPath();
+            aCtx.moveTo(random() * width, random() * height);
+            aCtx.bezierCurveTo(
+                random() * width, random() * height,
+                random() * width, random() * height,
+                random() * width, random() * height
+            );
+            aCtx.strokeStyle = `hsla(${300 + random()*60}, 80%, 70%, ${random() * 0.2})`;
+            aCtx.lineWidth = random() * 5 + 1;
+            aCtx.stroke();
+        }
+
+        // 3. 几何图形 (代表输入的字)
+        for(let i=0; i<8; i++) {
+            const x = random() * width;
+            const y = random() * height;
+            const size = random() * 40 + 10;
+            
+            aCtx.beginPath();
+            const hue = 330 + random() * 30; 
+            aCtx.fillStyle = `hsla(${hue}, 70%, 60%, ${random() * 0.3 + 0.1})`;
+            
+            if (random() > 0.5) {
+                aCtx.arc(x, y, size, 0, Math.PI*2);
+            } else {
+                aCtx.moveTo(x, y + size/4);
+                aCtx.quadraticCurveTo(x, y, x + size/2, y);
+                aCtx.quadraticCurveTo(x + size, y, x + size, y + size/4);
+                aCtx.quadraticCurveTo(x + size, y + size, x + size/2, y + size*1.5);
+                aCtx.quadraticCurveTo(x, y + size, x, y + size/4);
+            }
+            aCtx.fill();
+        }
+
+        // 4. 星光
+        for(let i=0; i<50; i++) {
+            const x = random() * width;
+            const y = random() * height;
+            const s = random() * 2;
+            aCtx.fillStyle = `rgba(255, 255, 255, ${random()})`;
+            aCtx.fillRect(x, y, s, s);
+        }
+    }
+
+    function downloadArt() {
+        const link = document.createElement('a');
+        link.download = 'love-poem-art.png';
+        link.href = document.getElementById('art-canvas').toDataURL();
+        link.click();
+    }
+
+    function closeModalAndReset() {
+        document.getElementById('poem-modal').classList.remove('active');
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('user-words').value = ""; // 清空输入框
+        document.getElementById('empty-msg').style.display = 'block';
+        document.getElementById('word-box').innerHTML = ''; // 清空盒子
+        document.getElementById('word-box').appendChild(document.getElementById('empty-msg'));
+        document.getElementById('score').innerText = '0';
+    }
+
+    draw();
+</script>
+
+</body>
+</html>
+```
